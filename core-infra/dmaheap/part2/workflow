@@ -1,0 +1,40 @@
++---------------------+         +-----------------------------+
+|  User Application   |         |       Kernel Driver         |
+|  (heap-array.c)     |         |    (importer-array.c)       |
++---------------------+         +-----------------------------+
+|                     |         |                             |
+| 1. Opens DMA heap   |         |                             |
+|    /dev/dma_heap/   |         |                             |
+|    system           |         |                             |
+|                     |         |                             |
+| 2. Allocates N      |         |                             |
+|    buffers via      |         |                             |
+|    DMA_HEAP_IOCTL_  |         |                             |
+|    ALLOC (loop)     |         |                             |
+|    -> gets N fds    |         |                             |
+|                     |         |                             |
+| 3. Packs fds into   |         |                             |
+|    struct dma_      |         |                             |
+|    buffer_array     |         |                             |
+|    {count, fds[]}   |         |                             |
+|                     |         |                             |
+| 4. Issues single    |  --->   |  5. copy_from_user          |
+|    ioctl (MY_DMA_   |         |     (&buf_array)            |
+|    IOCTL_MAP_ARRAY) |         |                             |
+|                     |         |  6. For each fd in array:   |
+|                     |         |     +-- dma_buf_get(fd)     |
+|                     |         |     |   -> dma_buf *        |
+|                     |         |     +-- dma_buf_attach()    |
+|                     |         |     |   -> attachment       |
+|                     |         |     +-- dma_buf_map_        |
+|                     |         |     |   attachment()        |
+|                     |         |     |   -> sg_table *       |
+|                     |         |     +-- sg_dma_address()    |
+|                     |         |     |   -> DMA address      |
+|                     |         |     +-- Cleanup: unmap,     |
+|                     |         |         detach, put         |
+|                     |         |     (continue on failure)   |
+|                     |  <---   |                             |
+|                     |         |                             |
+| 7. Close all fds    |         |                             |
++---------------------+         +-----------------------------+

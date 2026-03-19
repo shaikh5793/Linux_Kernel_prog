@@ -1,0 +1,48 @@
++---------------------+         +-----------------------------+
+|  User Application   |         |       Kernel Driver         |
+|  (heap-sync.c)      |         |    (importer-sync.c)        |
++---------------------+         +-----------------------------+
+|                     |         |                             |
+| 1. Allocates buffer |         |                             |
+|    from DMA heap    |         |                             |
+|                     |         |                             |
+| 2. mmap + writes    |         |                             |
+|    test data into   |         |                             |
+|    buffer           |         |                             |
+|                     |         |                             |
+| 3. Issues ioctl     |  --->   |  Phase 1: CPU Access        |
+|    (MY_DMA_IOCTL_   |         |  --------------------------  |
+|    TRANSFER,        |         |  4. dma_buf_get(fd)         |
+|    &buf_fd)         |         |                             |
+|                     |         |  5. dma_buf_begin_cpu_      |
+|                     |         |     access(BIDIRECTIONAL)   |
+|                     |         |     -> flush/invalidate     |
+|                     |         |        caches               |
+|                     |         |                             |
+|                     |         |  6. dma_buf_vmap()          |
+|                     |         |     -> kernel virtual addr  |
+|                     |         |     Read buffer content     |
+|                     |         |     dma_buf_vunmap()        |
+|                     |         |                             |
+|                     |         |  7. dma_buf_end_cpu_access()|
+|                     |         |     -> sync caches back     |
+|                     |         |                             |
+|                     |         |  Phase 2: DMA Mapping       |
+|                     |         |  --------------------------  |
+|                     |         |  8. dma_buf_attach()        |
+|                     |         |     -> attachment           |
+|                     |         |                             |
+|                     |         |  9. dma_buf_map_attachment()|
+|                     |         |     -> sg_table *           |
+|                     |         |                             |
+|                     |         |  10. sg_dma_address()       |
+|                     |         |      -> DMA address         |
+|                     |         |                             |
+|                     |         |  11. program_dma_transfer() |
+|                     |         |      (simulated HW program) |
+|                     |         |                             |
+|                     |         |  12. Cleanup: unmap, detach,|
+|                     |  <---   |      put                    |
+|                     |         |                             |
+| 13. Close fds       |         |                             |
++---------------------+         +-----------------------------+

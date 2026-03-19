@@ -1,0 +1,29 @@
+Build Notes (Makefile.skel)
+==========================
+Copy Makefile.skel to Makefile and Update the paths for KDIR under the ARM sections to point to your specific 
+kernel source directories for QEMU ARM and BeagleBone Black environments.
+
+Ensure that the cross-compilers (arm-linux-gnueabihf-gcc) are correctly installed and accessible in your environment path.
+This setup assumes you have the kernel headers or the source for the target kernels installed at the specified KDIR. 
+If building for a kernel different from the host, you might need the complete kernel source to resolve dependencies.
+
+Makefile is structured to be versatile across different platforms by using conditional statements and allows 
+you to easily extend or modify the compilation process for additional platforms or custom configurations.
+
+To build the module:
+
+1. For the currently running kernel on an x86 host:
+
+    $ make
+
+2. For an ARM target running in QEMU:
+
+    $ make TARGET=qemuarm
+
+3. For BeagleBone Black:
+
+    $ make TARGET=beaglebone
+
+
+
+

@@ -1,0 +1,14 @@
+
+1. struct usb_device : Each usb client is enumerated as an instance of this
+                       structure
+2. struct usb_config : Each conifguration descriptor is enumerated as an
+                       instance of this type.
+3. struct usb_host_interface : Each interface descriptor is enumerated into an
+                               instance of this type.
+
+4. struct usb_interface : This is usb driver subsystem specific data structure used to represent a 
+                          specific usb functionality( A usb function might comprise of multiple 
+                          usb_host_interfaces called alternate settings)
+
+5. struct usb_host_endpoint : Each endpoint descriptor is enumerated into an
+                              instance of this type

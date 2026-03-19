@@ -1,0 +1,52 @@
++---------------------+         +-----------------------------+
+|  User Application   |         |       Kernel Driver         |
+|  (heap-multisg.c)   |         |    (importer-multisg.c)     |
++---------------------+         +-----------------------------+
+|                     |         |                             |
+| 1. Allocates 4MB    |         |                             |
+|    from system heap |         |                             |
+|    (4 x order-8     |         |                             |
+|    1MB pages =      |         |                             |
+|    4 SG entries)    |         |                             |
+|                     |         |                             |
+| 2. mmap + writes    |         |                             |
+|    test data        |         |                             |
+|                     |         |                             |
+| 3. Issues ioctl     |  --->   |  4. dma_buf_get(fd)         |
+|    (MY_DMA_IOCTL_   |         |                             |
+|    MULTISG,         |         |  5. begin_cpu_access +      |
+|    &buf_fd)         |         |     vmap -> read content    |
+|                     |         |     vunmap + end_cpu_access |
+|                     |         |                             |
+|                     |         |  6. dma_buf_attach()        |
+|                     |         |     -> attachment           |
+|                     |         |                             |
+|                     |         |  7. dma_buf_map_attachment()|
+|                     |         |     -> sg_table *           |
+|                     |         |     (DMA_BIT_MASK(64) to    |
+|                     |         |      bypass SWIOTLB)        |
+|                     |         |                             |
+|                     |         |  8. print_sg_entries():     |
+|                     |         |     orig_nents vs nents     |
+|                     |         |     for_each_sgtable_dma_sg |
+|                     |         |     +-- SG[0]: addr, 1MB   |
+|                     |         |     +-- SG[1]: addr, 1MB   |
+|                     |         |     +-- SG[2]: addr, 1MB   |
+|                     |         |     +-- SG[3]: addr, 1MB   |
+|                     |         |     Total: 4MB              |
+|                     |         |                             |
+|                     |         |  9. Cleanup: unmap, detach, |
+|                     |  <---   |     put                     |
+|                     |         |                             |
+| 10. Close fds       |         |                             |
++---------------------+         +-----------------------------+
+
+System Heap Page Pool Orders:
++----------+--------+---------------------------+
+| Order    | Size   | Usage                     |
++----------+--------+---------------------------+
+| 8        | 1MB    | Largest, tried first      |
+| 4        | 64KB   | Medium fallback           |
+| 0        | 4KB    | Smallest fallback         |
++----------+--------+---------------------------+
+4MB allocation -> 4 x order-8 pages -> 4 SG entries

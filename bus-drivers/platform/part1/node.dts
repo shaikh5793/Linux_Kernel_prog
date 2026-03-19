@@ -1,0 +1,36 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/dts-v1/;
+
+/ {
+   vDev1: vDev-1 {
+            compatible = "vDev-Ax";
+            vdev-id = <0>;
+            virt,size = <512>;
+            virt,permission = <3>;
+            virt,dev-serial = "VDEV_1";
+        };
+
+   vDev2: vDev-2 {
+            compatible = "vDev-Bx";
+            vdev-id = <1>;
+            virt,size = <512>;
+            virt,permission = <3>;
+            virt,dev-serial = "VDEV_2";
+        };
+
+   vDev3: vDev-3 {
+            compatible = "vDev-Cx";
+            vdev-id = <2>;
+            virt,size = <1024>;
+            virt,permission = <1>;
+            virt,dev-serial = "VDEV_3";
+        };
+
+   vDev4: vDev-4 {
+            compatible = "vDev-Dx";
+            vdev-id = <3>;
+            virt,size = <2048>;
+            virt,permission = <2>;
+            virt,dev-serial = "VDEV_4";
+        };
+};    

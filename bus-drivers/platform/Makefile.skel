@@ -1,0 +1,30 @@
+obj-m := vdrv_multi.o vdrv_quad.o
+
+# Default to current running kernel version
+KDIR ?= /lib/modules/$(shell uname -r)/build
+
+# Check for the target platform (can be 'x86', 'qemuarm', 'beaglebone')
+TARGET ?= x86
+
+ifeq ($(TARGET), qemuarm)
+    ARCH := arm
+    CROSS_COMPILE := arm-linux-
+    KDIR := /path/to/qemu/arm/kernel
+endif
+
+ifeq ($(TARGET), beaglebone)
+    ARCH := arm
+    CROSS_COMPILE := arm-linux-gnueabihf-
+    KDIR := /path/to/beaglebone/kernel
+endif
+
+
+# Default target
+all:
+	make ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) -C $(KDIR) M=$(PWD) modules
+
+clean:
+	make ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) -C $(KDIR) M=$(PWD) clean
+
+help:
+	make ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) -C $(KDIR) M=$(PWD) help

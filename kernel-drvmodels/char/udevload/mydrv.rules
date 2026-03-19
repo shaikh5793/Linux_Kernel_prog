@@ -1,0 +1,2 @@
+ACTION=="add", KERNEL=="veda_sample.0", RUN+="/sbin/insmod /home/raghub/raghu/ldd-6.x/kernel-drvmodels/char/udevload/platdrv.ko"
+ACTION=="remove", KERNEL=="veda_sample.0", RUN+="/sbin/rmmod platdrv"

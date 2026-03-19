@@ -1,0 +1,719 @@
+Device Tree basics
+==================
+
+
+ - The Device Tree is a list of nodes, describing various hardware components 
+   present directly on computing platform/system. Each node describes various 
+   characteristics/properties of a hardware component. Written in a specialized 
+   language, the Device Tree Source(.dts) is compiled to generate Device Tree 
+   Blob(DTB) through the Device Tree Compiler(DTC).
+
+
+ - What it does do is provide a language for decoupling the
+   hardware configuration from the board and device driver support in the
+   Linux kernel (or any other operating system for that matter).  
+   
+ - it allows board and device support to become data driven; to make
+   setup decisions based on data passed into the kernel instead of on
+   per-machine hard coded selections.
+
+ - Ideally, data driven platform setup should result in less code
+   duplication and make it easier to support a wide range of hardware
+   with a single kernel image.
+
+ - Linux uses DT data for three major purposes:
+	1) platform identification,
+	2) runtime configuration
+	3) device population.
+
+
+ - Machine specific firmware (for ARM SOCS) is usually programmed to pass 
+   required run-time configuration data using either of the modes.
+
+        a) ATAGS interface.  Minimal information is passed from firmware
+        to the kernel with a tagged list of predefined parameters.
+
+                r0 : 0
+
+                r1 : Machine type number
+
+                r2 : Physical address of tagged list in system RAM
+
+        b) Entry with a flattened device-tree block.  Firmware loads the
+        physical address of the flattened device tree block (dtb) into r2.
+
+                r0 : 0
+
+                r1 : Valid machine type number.  When using a device tree,
+                a single machine type number will often be assigned to
+                represent a class or family of SoCs.
+
+                r2 : physical pointer to the device-tree block in RAM.
+
+   The kernel will differentiate between ATAGS and device tree booting by
+   reading the memory pointed to by r2 and looking for either the flattened
+   device tree block magic value (0xd00dfeed) or the ATAG_CORE value at
+   offset 0x4 from r2 (0x54410001).
+	
+----------------------------------------------------------------------------------------------
+
+layout of DT script
+===================
+
+-  Device tree scripts are maintained for various off-shelf boards in 
+   ($KERNEL_SOURCE)/($ARCH)/boot/dts branch.
+
+
+ - The device tree begins with a root node, represented by a forward slash,/, 
+   which contains subsequent nodes representing the hardware of the system. 
+   Each node has a name and contains number of properties in the form 
+   name = "value".
+
+
+	/dts-v1/;
+	/{
+	    model = "TI AM335x BeagleBone";
+	    compatible = "ti,am33xx";
+	    #address-cells = <1>;
+        #size-cells = <1>;
+	   
+       cpus {
+		 #address-cells = <1>;
+		 #size-cells = <0>;
+	
+          cpu@0 {
+			compatible = "arm,cortex-a8";
+			device_type = "cpu";
+		    reg = <0>;
+		    };
+		 cpu@1{
+			compatible = "arm,cortex-a8";
+            device_type = "cpu";
+            reg = <1>;
+		   };
+		};
+	memory@0x80000000 {
+			device_type = "memory";
+			reg = <0x80000000 0x20000000>; /* 512 MB */
+		};
+	 };
+
+
+ - In above case we have a root node which contains a cpus node and a memory 
+   node. The cpus node contains a single CPU node named cpu@0 . 
+
+ - It is a common convention that the names of nodes include an '@' followed by   
+   an address that helps distinguish them from other similar nodes.
+
+ - Each node contains 'compatible' property. In above sample both 'root' and 
+   'cpu' nodes have compatible property
+
+ - Linux kernel uses this to match the name against compatible strings 
+   specified by BSP and Drivers(platform).
+
+ - It is standard that value is composed of manufacturer name and component 
+   name to reduce confusion between similar devices made by different 
+   manufacturers hence ti,am33xx and arm,cortex-a8.
+
+ - 'device_type' property  describes class of a device. Node name is often 
+   assigned/derived from device_type
+
+ -'reg' property refers to range of units in a register address space, 
+   this property generally consists of two values representing start address 
+   and length(size) of the address range. Each value is referred to as a 'cell' 
+
+ - Each addressable device gets 'reg' property  which could be a list of tuples   in the form:
+	reg = <address1 length1 [address2 length2] [address3 length3] ... >. 
+ 
+ - Each tuple represents an address range used by the device. Each address 
+   value is a list of one or more 32 bit integers cells. Similarly, 
+   the length value can either be a list of cells, or empty.
+
+
+ - #address-cells and #size-cells properties in the parent node are used to 
+   state number of (unsigned 32bit)cells used to represent address and size. 
+   In other words, interpreting reg property requires the parent node's 
+   #address-cells and #size-cells values. 
+
+ - The CPU nodes represent the simplest case while talking about addressing, 
+   Each CPU is assigned a single unique ID, and there is no size associated 
+   with CPU ids   
+
+	cpus {
+             #address-cells = <1>;
+             #size-cells = <0>;
+             cpu@0 {
+                  compatible = "arm,cortex-a8";
+                  reg = <0>;
+             };
+             cpu@1 {
+                 compatible = "arm,cortex-a8";
+                 reg = <1>;
+             };
+        };
+
+
+ - In above cpus node, #address-cells is set to 1, and #size-cells is 
+   set to 0. This means that child reg values are a single uint32 
+   that represent the address with no size field. 
+
+
+Memory Mapped devices
+=====================
+
+ - memory mapped devices are assigned a range of addresses. 
+   #size-cells is used to state how large the length field is 
+   in each child reg tuple. 
+
+
+/ {
+    	#address-cells = <1>;
+    	#size-cells = <1>;
+
+    	...
+
+    	serial@101f2000 {
+        	compatible = "arm,pl011";
+        	reg = <0x101f2000 0x1000 >;
+    	};
+
+    	gpio@101f3000 {
+        	compatible = "arm,pl061";
+        	reg = <0x101f3000 0x1000
+                       0x101f4000 0x0010>;
+    	};
+
+    	interrupt-controller@10140000 {
+        	compatible = "arm,pl190";
+        	reg = <0x10140000 0x1000 >;
+    	};
+
+    	spi@10115000 {
+        	compatible = "arm,pl022";
+        	reg = <0x10115000 0x1000 >;
+    	};
+
+    ...
+
+};
+
+ - In above example nodes, each address value is 1 cell (32 bits), and each length value is 
+   also 1 cell(32 bits). 64 bit machines may use a value of 2 for #address-cells and 
+   #size-cells to get 64 bit addressing in the device tree. 
+
+
+External(off-chip) Device Nodes
+==============================
+
+ - SOC's might support various external buses with discrete chip select lines 
+   through which devices can be connected with System.
+
+ - Devices attached through such interfaces use a 
+   different addressing scheme, and DT nodes must describe 
+   their addresses.
+
+	external-bus {
+        	#address-cells = <2>
+        	#size-cells = <1>;
+
+        	ethernet@0,0 {
+            		compatible = "smc,smc91c111";
+            		reg = <0 0 0x1000>;
+        	};
+
+        	i2c@1,0 {
+            		compatible = "acme,a1234-i2c-bus";
+            		reg = <1 0 0x1000>;
+        	};
+
+        	flash@2,0 {
+            		compatible = "samsung,k8f1315ebm", "cfi-flash";
+            		reg = <2 0 0x4000000>;
+        	};
+    	};
+
+
+ - The external-bus uses 2 cells for the address value; 
+   one for the chip select number, and other for the offset from 
+   the base of the chip select. 
+
+   in this example,each reg entry contains 3 cells; 
+             <chipselect number, offset, and length>.
+
+ - Linux Drivers cannot derive the address through 
+   chip select numbers, they would need physical address. 
+
+   In order to translate addresses upward (ie.into CPU physical 
+   addresses),for this external-bus nodes must define a "ranges" property. 
+
+ - 'ranges' serves as an extension to 'reg' through which compiler resolves
+    address details of chip select devices. It is a table of addresses for 
+    each chip select line.  
+
+   If the "ranges" property is missing at a given level, it's assumed 
+   that translation isn't possible, 
+   i.e., the registers are not visible on the parent bus.  
+
+
+ - Linux drivers can access address "range" property through kernel function
+   of_get_property().
+
+/ {
+    compatible = "acme,coyotes-revenge";
+    #address-cells = <1>;
+    #size-cells = <1>;
+    ...
+    external-bus {
+        #address-cells = <2>
+        #size-cells = <1>;
+        ranges = <0 0  0x10100000   0x1000     // Chipselect 1, Ethernet
+                  1 0  0x10160000   0x1000     // Chipselect 2, i2c controller
+                  2 0  0x30000000   0x1000000>; // Chipselect 3, NOR Flash
+
+        ethernet@0,0 {
+            compatible = "smc,smc91c111";
+            reg = <0 0 0x1000>;
+        };
+
+        i2c@1,0 {
+            compatible = "acme,a1234-i2c-bus";
+            reg = <1 0 0x1000>;
+            rtc@58 {
+                compatible = "maxim,ds1338";
+                reg = <58>;
+            };
+        };
+
+        flash@2,0 {
+            compatible = "samsung,k8f1315ebm", "cfi-flash";
+            reg = <2 0 0x4000000>;
+        };
+    };
+     
+Static slave nodes
+==================
+
+ - DT nodes must also be created for representing slave devices on static 
+   buses like i2c, spi..
+   such devices have address ranges, but they are not directly accessible by 
+   the CPU. 
+
+   i2c@1,0 {
+            compatible = "acme,a1234-i2c-bus";
+            #address-cells = <1>;
+            #size-cells = <0>;
+            reg = <1 0 0x1000>;
+            rtc@58 {
+                compatible = "maxim,ds1338";
+                reg = <58>;
+            };
+        };
+
+ - Each i2c device is assigned an address, but there is no length or 
+   range associated with it. 
+
+ - SPI slave nodes must be children of the SPI controller node.
+ 
+	spi@f00 {
+        #address-cells = <1>;
+        #size-cells = <0>;
+        compatible = "fsl,mpc5200b-spi","fsl,mpc5200-spi";
+        reg = <0xf00 0x20>;
+
+        	ethernet-switch@0 {
+            		compatible = "micrel,ks8995m";
+            		spi-max-frequency = <1000000>;
+            		reg = <0>;
+        	};
+
+        	codec@1 {
+            		compatible = "ti,tlv320aic26";
+            		spi-max-frequency = <100000>;
+            		reg = <1>;
+        };
+    };  
+
+ - 'reg' property is used to pass Chip select address of device.
+ - 'spi-max-frequency' property for Maximum SPI clocking speed of device in Hz.
+
+
+Interrupt controllors
+=====================
+
+- A device is marked as an interrupt controller with the "interrupt-controller"
+  property. This is a empty, boolean property. 
+
+- "#interrupt-cells"property defines the number of cells needed to specify a single interrupt.
+
+ vic: intc@10140000 {
+        compatible = "arm,versatile-vic";
+        interrupt-controller;
+        #interrupt-cells = <1>;
+        reg = <0x10140000 0x1000>;
+    };
+
+
+
+Phandle properties
+==================
+
+ - The structure of the device tree described so far presents a single 
+   hierarchy of components (in order of their apprearance from CPU and 
+   address space assigned). 
+   
+- Devices might also be connected to an interrupt controller, clock source and 
+  voltage regulator. To express these connections, we have 'phandles'.
+
+ - A phandle is a numerical (as opposed to text string) reference to another 
+   device node. phandles are often used to refer to device nodes of interrupt 
+   controllers, gpio controllers, and clock controllers. 
+
+   example of a system containing a serial port which can generate interrupts 
+   and the interrupt controller:
+
+  /dts-v1/;
+  {
+	intc: interrupt-controller@48200000 {
+		compatible = "ti,am33xx-intc";
+		interrupt-controller;
+		#interrupt-cells = <1>;
+		reg = <0x48200000 0x1000>;
+  	};
+	serial@44e09000 {
+		compatible = "ti,omap3-uart";
+		ti,hwmods = "uart1";
+		clock-frequency = <48000000>;
+		reg = <0x44e09000 0x2000>;
+		interrupt-parent = <&intc>;
+		interrupts = <72>;
+	};
+  };
+
+ - We have an interrupt-controller node which has the special property 
+   #interrupt-cells, which tells us how many 4-byte values are needed to represent 
+   an interrupt line
+
+ - serial node has an 'interrupt-parent' property which references the 
+   interrupt-controller it is connected to by using its label. 
+   This is the phandle. The actual IRQ line is given by the interrupts property, 
+   72 in this case.
+
+
+Vendor specific Bindings
+========================
+ - Beyond common properties, arbitrary properties can be added to nodes. 
+   This is usually needed while dealing with device specific attributes 
+   which are vendor specific. 
+
+ - Note: These properties were passed as platfrom data in old style 'C' Code
+         platform device structure has a void * field to assgin platform data 
+
+   example: Network controller node might also need to include properties of 
+            'phy' interface
+	    A serial controller node might also define clock frequency.
+
+
+   	1. First, new device-specific property names should use a 
+           manufacture prefix so that they don't conflict with existing 
+           standard property names(standard bindings).
+
+	2. Meaning of the properties must be documented in a binding so 
+           that a device driver author knows how to interpret the data. 
+           A binding documents what a particular compatible value means, 
+           what properties it should have,and what device it represents. 
+
+ - The serial node above is defining such bindings.clock-frequency and ti,hwmods. 
+   These are part of the bindings for this particular type of device, 
+   in other words, the kernel device driver will read these properties to 
+   manage the device. 
+
+   The binding docs can be found in the Linux kernelsource
+   (Documentation/devicetree/bindings/)
+
+Interrupt Lines
+===============
+
+ - Unlike device addressing which is naturally expressed in the device tree, 
+   interrupt signals are expressed as links between nodes independent of the tree. 
+   
+   Four properties are used to describe interrupt connections: 
+
+       1) interrupt-controller - An empty property declaring a node as a device 
+                                 that receives interrupt signals
+
+       2) #interrupt-cells - This is a property of the interrupt controller node. 
+                             It states how many cells are in an interrupt specifier 
+			     for this interrupt controller 
+                             (Similar to #address-cells and #size-cells).
+
+       3) interrupt-parent - property of a device node containing a phandle to 
+                             the interrupt controller that it is attached to. 
+                             Nodes that do not have an interrupt-parent property 
+                             can also inherit the property from their parent node.
+
+
+       4) interrupts -  property of a device node containing a list of 
+                        interrupt specifiers, one for each interrupt output 
+                        signal on the device
+
+
+	/ {
+    		compatible = "acme,coyotes-revenge";
+    		#address-cells = <1>;
+    		#size-cells = <1>;
+    		interrupt-parent = <&intc>;
+
+    		cpus {
+        	     #address-cells = <1>;
+        	     #size-cells = <0>;
+        	     cpu@0 {
+            		compatible = "arm,cortex-a9";
+            		reg = <0>;
+        	    };
+        	    cpu@1 {
+            		compatible = "arm,cortex-a9";
+            		reg = <1>;
+        	    };
+          };
+
+    		serial@101f0000 {
+        		compatible = "arm,pl011";
+        		reg = <0x101f0000 0x1000 >;
+        		interrupts = < 1 0 >;
+                interrupt-parent = <&intc>;
+    		};
+
+    		serial@101f2000 {
+        		compatible = "arm,pl011";
+        		reg = <0x101f2000 0x1000 >;
+        		interrupts = < 2 0 >;
+    		};
+
+    		gpio@101f3000 {
+        		compatible = "arm,pl061";
+        		reg = <0x101f3000 0x1000
+               		       0x101f4000 0x0010>;
+        		interrupts = < 3 0 >;
+    		};
+
+		 gpio1: gpio1@foo {
+                        compatible = "arm,pl061";
+                        reg = <0x123 0x1000
+                               0x12345 0x0010>;
+			interrupt-controller;
+			#interrupt-cells = <2>;
+                        interrupts = < 7 0 >;
+			interrupt-parent = <&intc>;
+                };
+
+
+    		intc: interrupt-controller@10140000 {
+        			compatible = "arm,pl190";
+        			reg = <0x10140000 0x1000 >;
+        			interrupt-controller;
+        			#interrupt-cells = <2>;
+    			};
+
+    		spi@10115000 {
+        		compatible = "arm,pl022";
+        		reg = <0x10115000 0x1000 >;
+        		interrupts = < 4 0 >;
+			interrupt-parent = <&intc>
+    		};
+	
+		spi1@xyz {
+			compatible = "arm,ti";
+			reg = <x y>;
+			interrupts = <10 0>
+			interrupt-parent = <&gpio1>
+		};
+
+
+    		external-bus {
+        		#address-cells = <2>
+        		#size-cells = <1>;
+        		ranges = <0 0  0x10100000   0x10000     // Chipselect 1, Ethernet
+                  		  1 0  0x10160000   0x10000     // Chipselect 2, i2c controller
+                  		  2 0  0x30000000   0x1000000>; // Chipselect 3, NOR Flash
+
+        		ethernet@0,0 {
+            			compatible = "smc,smc91c111";
+            			reg = <0 0 0x1000>;
+            			interrupts = < 5 2 >;
+        		  };
+
+        		i2c@1,0 {
+            		       compatible = "acme,a1234-i2c-bus";
+            		       #address-cells = <1>;
+            		       #size-cells = <0>;
+            		       reg = <1 0 0x1000>;
+            		       interrupts = < 6 2 >;
+            		    rtc@58 {
+                		 compatible = "maxim,ds1338";
+                		 reg = <58>;
+                		 interrupts = < 7 3 >;
+            		      };
+        		  };
+
+        		flash@2,0 {
+            			compatible = "samsung,k8f1315ebm", "cfi-flash";
+            			reg = <2 0 0x4000000>;
+        		};
+    		};
+	};
+
+ -  The machine has a single interrupt controller, interrupt-controller@10140000.
+    The label 'intc:' has been added to the interrupt controller node, and the label was used to 
+    assign a phandle to the interrupt-parent property in the root node. 
+
+ -  This interrupt-parent value becomes the default for the system because all child nodes 
+    inherit it unless it is explicitly overridden.
+   
+ -  Each device uses an interrupt property to specify a different 
+    interrupt input line.
+
+    #interrupt-cells is 2, so each interrupt specifier has 2 cells. 
+
+ 	-  first cell to encode the interrupt line number, and the second cell 
+           to encode flags such as active high vs. active low, or edge vs. 
+           level sensitive. 
+
+           For any given interrupt controller, refer to the controller's 
+           binding documentation to learn how the specifier is encoded. 
+
+
+DT include files
+================
+ - A lot of hardware is common between SoCs of the same family and between boards
+   using the same SoC. This is reflected in the device tree by splitting out common
+   sections into include files, usually with the extension .dtsi.
+
+   open-firmware standard include:
+	/include/ "vexpress-v2m.dtsi" 
+
+   C-style include
+	#include "am33xx.dtsi"
+	#include "am335x-bone-common.dtsi"
+
+	#include <dt-bindings/gpio/gpio.h>
+	#include <dt-bindings/pinctrl/am33xx.h>
+
+ - Device tree include files can also contain C-style Macros
+
+	#define PULL_DISABLE (1 << 3)
+	#define INPUT_EN (1 << 5)
+
+ - All of this is resolved if the device tree sources are built using kernel kbuild, 
+   which first runs them through the C pre-processor, cpp , where the #include 
+   and #define statements are processed into plain text that is suitable for the device 
+   tree compiler.
+
+
+-  When we include files in this way the nodes are overlaid on top of one another to create a 
+   composite tree in which the outer layers extend or modify the inner ones.
+
+   For example, am33xx.dtsi, which is general to all am33xx SoCs, defines the first 
+   MMC controller interface like this
+
+	mmc1: mmc@48060000 {
+		compatible = "ti,omap4-hsmmc";
+		ti,hwmods = "mmc1";
+		ti,dual-volt;
+		ti,needs-special-reset;
+		ti,needs-special-hs-handling;
+		dmas = <&edma 24 &edma 25>;
+		dma-names = "tx", "rx";
+		interrupts = <64>;
+		interrupt-parent = <&intc>;
+		reg = <0x48060000 0x1000>;
+		status = "disabled";
+	 };
+
+ In am335x-bone-common.dtsi , which is included with both BeagleBone and BeagleBone Black, 
+ the same node is referenced by its phandle:
+
+ Node is being extended to specify addtional bindings for Linux pincntrl subsystem
+
+	   &mmc1 {
+		status = "okay";
+		bus-width = <0x4>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&mmc1_pins>;
+		cd-gpios = <&gpio0 6 GPIO_ACTIVE_HIGH>;
+		cd-inverted;
+	   };
+
+ Here, mmc1 is enabled ( status="okay" ) because both variants have a physical MMC1 device, 
+ and the pinctrl is established.
+
+ in am335x-boneblack.dts there is another reference to mmc1 which associates it with a voltage regulator:
+
+	   &mmc1 {
+		vmmc-supply = <&vmmcsd_fixed>;
+	    };
+
+ layering source files like this gives flexibility and reduces the need for duplicated code.
+
+	&i2c@foo{
+		status = "okay";
+		eeprom {
+			compatible = "atmel,eeprom";
+		};
+
+based SOC series ABC
+
+        -- SOC A
+            -- SOC A1
+            -- SOC A2
+
+        -- SOC B
+
+
+ dts for SOC ABC(ABC.dtsi)
+================
+
+    declarations of nodes common to ABC series of SOC
+
+dts for SOC A(A.dtsi)
+=============
+    import ABC definitions from ABC SOC file
+    Declare nodes for components unique to A
+
+
+dts for SOC B(B.dtsi)-----------------------------------
+=============                                           #include "abc.dtsi"
+    import definitions from ABC                         /{
+    Declare nodes for unique compoenents of B                   ...
+
+
+SBC based on SOC B(Board device tree) (board.dts)
+====================================
+  import definitions from B SOC                     #include "B.dtsi"
+  Declare nodes for peripheral on board             / {
+
+
+B.dtsi
+
+i2c@fffff {
+        ....
+        ...
+        ....
+        ....
+        ....
+        .....
+        status = "disabled";
+  };
+
+
+ board.dts
+
+&i2c@ffff{
+        #address-cell = <1>;
+        #size-cell = <0>;
+        status = "okay";
+        rtc@58 {
+                ...
+                ...
+                ...
+            };
+};

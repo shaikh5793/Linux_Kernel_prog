@@ -1,0 +1,1 @@
+savedcmd_exporter-sg-multi.ko := ld -r -m elf_x86_64 -z noexecstack --no-warn-rwx-segments --build-id=sha1  -T /usr/src/linux-headers-6.14.0-15-generic/scripts/module.lds -o exporter-sg-multi.ko exporter-sg-multi.o exporter-sg-multi.mod.o .module-common.o

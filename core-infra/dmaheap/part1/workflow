@@ -1,0 +1,37 @@
++---------------------+         +-----------------------------+
+|  User Application   |         |       Kernel Driver         |
+|  (heap-map.c)       |         |    (importer-map.c)         |
++---------------------+         +-----------------------------+
+|                     |         |                             |
+| 1. Opens DMA heap   |         |                             |
+|    /dev/dma_heap/   |         |                             |
+|    system           |         |                             |
+|                     |         |                             |
+| 2. Allocates buffer |         |                             |
+|    via DMA_HEAP_    |         |                             |
+|    IOCTL_ALLOC      |         |                             |
+|    -> gets buf fd   |         |                             |
+|                     |         |                             |
+| 3. Issues ioctl     |  --->   |  4. copy_from_user(&fd)     |
+|    (MY_DMA_IOCTL_   |         |                             |
+|    MAP, &buf_fd)    |         |  5. dma_buf_get(fd)         |
+|                     |         |     -> struct dma_buf *     |
+|                     |         |                             |
+|                     |         |  6. dma_buf_attach(dmabuf,  |
+|                     |         |     dev)                    |
+|                     |         |     -> attachment           |
+|                     |         |                             |
+|                     |         |  7. dma_buf_map_attachment  |
+|                     |         |     (attachment, direction) |
+|                     |         |     -> sg_table *           |
+|                     |         |                             |
+|                     |         |  8. sg_dma_address(sgt->sgl)|
+|                     |         |     -> DMA address          |
+|                     |         |                             |
+|                     |         |  9. Cleanup:                |
+|                     |         |     dma_buf_unmap_attachment|
+|                     |         |     dma_buf_detach          |
+|                     |  <---   |     dma_buf_put             |
+|                     |         |                             |
+| 10. Close fds       |         |                             |
++---------------------+         +-----------------------------+

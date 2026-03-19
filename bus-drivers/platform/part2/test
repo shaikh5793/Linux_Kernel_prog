@@ -1,0 +1,20 @@
+
+Application
+
+	{
+		int a = 10;
+		.....		
+		......
+		ioctl(fd, CMD, &a);
+	}
+
+driver
+
+	ioctl(.....)
+	{
+	
+	  case(CMD)
+		copy_to_user(buf, a, 1024);	
+
+
+	}

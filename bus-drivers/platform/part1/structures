@@ -1,0 +1,52 @@
++------------------------------------------------------+
+|                   struct platform_device             |
+|------------------------------------------------------|
+|   name (device name)                                 |
+|   id (device ID)                                     |
+|   num_resources (number of I/O resources)            |
+|   resource[] (array of I/O resources)                |
+|   dev (embedded struct device) ----+                 |
++------------------------------------|-----------------+
+                                     |
+                                     v
+              +----------------------+----------------+
+              |                      struct device     |
+              |----------------------------------------|
+              |   parent (pointer to parent device)    |
+              |   bus (pointer to bus type)            |
+              |   driver (pointer to device driver)    |
+              |   of_node (pointer to struct device_node) -+
+              |   driver_data (void pointer for driver data)|
+              |   other device fields                  |  |
+              +----------------------------------------+  |
+                                                        |  
+                                                        v
+                             +--------------------------+----------------+
+                             |                        struct device_node   |
+                             |---------------------------------------------|
+                             |   name (name of the device node)            |
+                             |   phandle (phandle for the node)            |
+                             |   properties (list of properties)           |
+                             |   parent (pointer to parent node)           |
+                             |   child (pointer to child node)             |
+                             |   full_name (full path name in the device tree) |
+                             +---------------------------------------------+
+
+
+
+1. struct platform_device: Represents a platform-specific device, and includes fields like the device's name, ID, 
+   and an array of resources (resource[]) such as memory or I/O regions. It also embeds a struct device to interact 
+   with the driver core.
+
+2. struct device: Embedded within struct platform_device, it represents a generic device in the Linux device model. 
+   It contains pointers to a bus (bus), a driver (driver), and optionally, an associated device node (of_node) from the device tree.
+
+3. struct device_node: Represents a node in the device tree, holding information parsed from the device tree 
+   (if the platform device is described via the device tree). It stores data like the node's name, a list of properties, 
+   and links to parent/child nodes.
+
+4. driver_data: A void * field in struct device that is used by device drivers to store private data specific to a device. 
+   This pointer can be accessed via functions like dev_get_drvdata() and dev_set_drvdata().
+
+
+

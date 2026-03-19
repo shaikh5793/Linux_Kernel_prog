@@ -1,0 +1,113 @@
+/* char driver operations
+
+open: Function assigned to open interface of Fops structure is invoked when 
+      application invokes open() api on device file.
+
+        int fd;
+        fd = open("/dev/vDev", O_RDWR);
+        if (fd < 0)
+            perror("FD failed\n");
+        read(fd, buf, 200);
+       /* open()-->|sys_open()-->vfs_open-->drv_open()*/
+*/
+
+static int char_dev_open(struct inode *inode, struct file *file)
+{
+   step 1: validate open request as per access policy of this driver
+	   if(!valid)
+		return -1;//negative no indicates err
+   step 2: ensure target device is in wake-up state
+   step 3: allocate caller application specific data structure(if any).
+   return 0; 
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*  release: Function assgined to release interface of fops is 
+             invoked when application uses close() api on driver fd.
+		
+	   close()--->|--->sys_release--->drv_release() */
+
+static int char_dev_release(struct inode *inode, struct file *file)
+{
+	step 1: decrement driver use counter (if any)
+	step 2: deallocate application specific state info or data (if tracked)
+	step 3: return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*  
+
+    Read: Function assigned to this interface is invoked when 
+    application invokes read() api on device file descriptor
+    read ---|->sys_read--->vfs_read---> drv_read()
+	read(fd, buf, 512)
+
+*/
+ssize_t char_drv_read (struct file *file , char __user *buf, size_t size, 
+	               loff_t *off)
+{
+   step 1: validate read request of the application 
+   step 2: verify and check if target device is ready for specific operation
+   step 3: execute device operation and gather data
+   step 4: Convert data into application usable format (if required)
+   step 5: transfer data to user-mode buffer (copy_to_user)
+   step 6: return no of bytes transferred
+}
+
+
+
+
+
+
+
+/*  write: Function assigned to this interface is invoked when 
+           application invokes write() api on device file descripter
+
+    write---|->sys_write---> drv_write()
+    write(fd, buf, 512)
+
+*/
+
+ssize_t char_drv_write (struct file *file , const char __user *buf, size_t size, loff_t *off)
+{
+   step 1: validate write request of the application
+   step 2: verify and check if target device is ready for specific operation
+   step 3: transfer data from user-mode buffer(copy_from_user)
+   step 4: convert data into device specific format (if needed)
+   step 5: Transfer data to device or execute appropriate device operation
+   step 6: return no of bytes transferred
+}
+
+
+
+
+
+
+
+
+

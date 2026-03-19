@@ -1,0 +1,18 @@
+
+
+
+Application
+----------------
+Syscall interface
+       |
+       |
+       |
+Kernel framework(char, block, network, mtd, video, audio......
+       |
+       |
+       |
+ Device Driver
+       |
+       |
+       |
+Bus Infrastructure(i2c core, platfrom core, spi core, pci core.... 

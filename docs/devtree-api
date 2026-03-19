@@ -1,0 +1,141 @@
+Which datastructures are enumerated from a DT node
+
++-------------+       +------------------+       +----------------+       +--------------+
+| DT Node     | ----> | platform_device  | ----> | dev structure  | ----> | of_node      |
++-------------+       +------------------+       +----------------+       +--------------+
+| - compatible|       | - name           |       | - driver        |       | - name       |
+| - reg       |       | - id             |       | - power         |       | - type       |
++-------------+       | - dev            |       | - pm_domain     |       | - properties |
+                      +------------------+       | - of_node ------+------>| - parent     |
+                                                  +----------------+       +--------------+
+DT Node: This is the start, representing the hardware configuration as specified in the device tree source files (.dts).
+
+compatible: Specifies the compatible device or driver.
+reg: Hardware address and size used to map the device.
+platform_device: Kernel structure representing a platform device.
+
+name, id: Identifiers for the device.
+dev: Includes the device structure, linking to more detailed configurations and statuses.
+dev: Represents a particular device (part of platform_device).
+
+driver: Links to the device driver handling this device.
+power: Power management related data.
+pm_domain: Power management domain.
+of_node: Points back to the device tree node.
+of_node: This is the kernel's internal representation of the DT node.
+
+name, type, properties: Details from the DT.
+parent: Points to the parent node in the device tree structure.
+
+struct platform device 
+===============
++--------------------------------------------------------+
+| struct platform_device                                        |
++--------------------------------------------------------+
+| - name               (const char *)                    |
+| - id                 (int)                             |
+| - dev                (struct device)                   |
+|     | - parent       (struct device *)                 |
+|     | - driver       (struct device_driver *)          |<--+
+|     |   | - name     (const char *)                    |   |
+|     | - driver_data  (void *)                          |   |
+|     | - bus          (struct bus_type *)               |   |
+|     | - power        (struct dev_pm_info)              |   |
+|     | - groups       (const struct attribute_group **) |   |
+|     | - release      (void (*)(struct device *))       |   |
+|     | - of_node      (struct device_node *)            |   |
+|     |   | - name     (const char *)                    |<--+---+
+|     |   | - type     (const char *)                    |        |
+|     |   | - phandle  (phandle)                         |        |
+|     |   | - full_name(const char *)                    |        |
+|     |   | - properties (struct property *)             |        |
+|     |   |   | - name  (const char *)                   |        |
+|     |   |   | - value (void *)                         |        |
+|     |   |   | - length (int)                           |        |
+|     |   | - parent   (struct device_node *)            |        |
+|     |   | - child    (struct device_node *)            |        |
+|     |   | - sibling  (struct device_node *)            |        |
++--------------------------------------------------------+
+
+
+struct platform_device:
+=======================
+
+name: Identifier for the device, a string.
+id: Instance number to differentiate devices with the same name, an integer.
+dev: Core structure representing the device in the kernel.
+
+
+struct device (dev within platform_device):
+==========================================
+parent: Points to the parent device in the device hierarchy.
+driver: Links to the device_driver responsible for this device.
+driver_data: Holds data set by the driver, a pointer to void.
+bus: Type of bus the device is attached to.
+power: Power-related information of the device, including state and wakeup capabilities.
+groups: Attribute groups for creating sysfs entries.
+release: Callback when the device's reference count reaches zero.
+of_node: Points to the corresponding device tree node.
+
+struct device_driver:
+=====================
+Functions that the driver provides for device operations 
+such as probe, remove, shutdown, suspend, and resume.
+
+struct bus_type:
+===============
+name: Name of the bus type.
+
+struct resource:
+=================
+Describes I/O memory regions, IRQs, and DMA channels, including start and end addresses, type, and hierarchy links.
+
+struct device_node (of_node in device):
+=======================================
+Represents the node in the device tree.
+
+
+Open-firmware API
+=================
+
+Kernel drivers frequently use a set of APIs to interact with device tree nodes
+enabling them to retrieve configuration information directly from the device tree. 
+
+Here’s a summarized list of commonly used device tree node APIs by kernel drivers:
+
++------------------------------------+-----------------------------------------------------------+-----------------------------------+
+| API                                | Description                                               | Kernel Header                     |
++------------------------------------+-----------------------------------------------------------+-----------------------------------+
+| of_find_node_by_path()             | Finds a device tree node by its path.                     | <linux/of.h>                      |
++------------------------------------+-----------------------------------------------------------+-----------------------------------+
+| of_find_compatible_node()          | Locates a node that matches a compatible property.        | <linux/of.h>                      |
++------------------------------------+-----------------------------------------------------------+-----------------------------------+
+| of_property_read_u32()             | Reads a 32-bit unsigned integer from a property.          | <linux/of.h>                      |
++------------------------------------+-----------------------------------------------------------+-----------------------------------+
+| of_property_read_u32_array()       | Reads an array of 32-bit unsigned integers from a property.| <linux/of.h>                      |
++------------------------------------+-----------------------------------------------------------+-----------------------------------+
+| of_property_read_string()          | Reads a string from a property.                           | <linux/of.h>                      |
++------------------------------------+-----------------------------------------------------------+-----------------------------------+
+| of_parse_phandle()                 | Retrieves the `struct device_node` pointer from a phandle.| <linux/of.h>                      |
++------------------------------------+-----------------------------------------------------------+-----------------------------------+
+| of_get_named_gpio()                | Gets a GPIO number to use in GPIO API calls.              | <linux/of_gpio.h>                 |
++------------------------------------+-----------------------------------------------------------+-----------------------------------+
+| of_find_property()                 | Checks if a property exists and returns the property.     | <linux/of.h>                      |
++------------------------------------+-----------------------------------------------------------+-----------------------------------+
+| of_device_is_available()           | Checks if the device is available for use (not disabled). | <linux/of.h>                      |
++------------------------------------+-----------------------------------------------------------+-----------------------------------+
+| of_get_property()                  | Retrieves a property value from a device node.            | <linux/of.h>                      |
++------------------------------------+-----------------------------------------------------------+-----------------------------------+
+| of_match_node()                    | Matches a device node against an array of compatible strings.| <linux/of.h>                      |
++------------------------------------+-----------------------------------------------------------+-----------------------------------+
+| of_address_to_resource()           | Extracts resource information from the device tree.       | <linux/of_address.h>              |
++------------------------------------+-----------------------------------------------------------+-----------------------------------+
+
+These APIs allow kernel modules and drivers to access and use the data specified in the device tree effectively, 
+facilitating device initialization and configuration based on hardware descriptions. 
+
+For developers working on drivers that interface with hardware described in device trees, 
+understanding these APIs is crucial for effective driver implementation and system stability.
+
+
+

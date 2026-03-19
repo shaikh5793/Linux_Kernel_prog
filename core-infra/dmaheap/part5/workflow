@@ -1,0 +1,26 @@
++---------------------+         +-----------------------------+
+|  User Application   |         |       Kernel Driver         |
++---------------------+         +-----------------------------+
+|                     |         |                             |
+| 1. Allocates DMA    |         |                             |
+|    buffer via DMA   |         |                             |
+|    heap             |         |                             |
+|                     |         |                             |
+| 2. Maps & writes    |         |                             |
+|    "frame1"         |         |                             |
+|                     |         |                             |
+| 3. Issues ioctl     |  --->   |  Retrieves dma_buf, maps    |
+|    (MY_DMA_IOCTL_   |         |  buffer, prints frame string|
+|    PROCESS_ASYNC)   |         |  & DMA address              |
+|                     |         |                             |
+|                     |         |  Simulates DMA transfer     |
+|                     |         |                             |
+|                     |         |  Signals user via SIGIO     |
+|                     |  <---   |                             |
+| 4. Receives SIGIO   |         |                             |
+|    notification     |         |                             |
+|                     |         |                             |
+| 5. Remaps & writes   ----------------- Write next frame --->|
+|    "frame2", etc.   |         |                             |
++---------------------+         +-----------------------------+
+

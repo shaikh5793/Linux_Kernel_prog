@@ -1,0 +1,59 @@
++---------------------+         +-----------------------------+
+|  User Application   |         |       Kernel Driver         |
+|  (heap-poll.c)      |         |    (importer-poll.c)        |
++---------------------+         +-----------------------------+
+|                     |         |                             |
+| 1. Allocates buffer |         |                             |
+|    from DMA heap    |         |                             |
+|                     |         |                             |
+| 2. mmap + writes    |         |                             |
+|    test data        |         |                             |
+|                     |         |                             |
+| 3. Issues ioctl     |  --->   |  4. dma_buf_get(fd)         |
+|    (MY_DMA_IOCTL_   |         |                             |
+|    POLL_SUBMIT,     |         |  5. kzalloc + dma_fence_    |
+|    &buf_fd)         |         |     init(fence, ops, lock,  |
+|                     |         |     ctx, seqno)             |
+|                     |         |                             |
+|                     |         |  6. poll_ready = false       |
+|                     |         |     dma_fence_add_callback  |
+|                     |         |     (fence, cb,             |
+|                     |         |      fence_signaled_cb)     |
+|                     |         |                             |
+|                     |         |  7. schedule_delayed_work   |
+|                     |  <---   |     (~1 second delay)       |
+|                     |         |     ioctl returns immediately|
+|                     |         |                             |
+| 8. poll(driver_fd,  |  --->   |  9. my_dma_poll():          |
+|    POLLIN, timeout) |         |     poll_wait(file, poll_wq)|
+|    BLOCKS waiting   |         |     poll_ready == false     |
+|                     |         |     -> returns 0 (block)    |
+|                     |         |                             |
+|                     |         |  10. ~1s later, work fires: |
+|                     |         |      begin_cpu_access +     |
+|                     |         |      vmap -> modify buffer  |
+|                     |         |      append " [processed]"  |
+|                     |         |      vunmap + end_cpu_access|
+|                     |         |                             |
+|                     |         |  11. dma_fence_signal()     |
+|                     |         |      -> fence_signaled_cb() |
+|                     |         |         poll_ready = true   |
+|                     |         |         wake_up(poll_wq)    |
+|                     |         |                             |
+|    poll() returns   |  <---   |  12. my_dma_poll():         |
+|    revents=POLLIN   |         |      poll_ready == true     |
+|                     |         |      -> returns EPOLLIN     |
+|                     |         |                             |
+| 13. Re-mmap buffer  |         |                             |
+|     Read processed  |         |                             |
+|     content         |         |                             |
+|                     |         |                             |
+| 14. Close fds       |         |                             |
++---------------------+         +-----------------------------+
+
+Fence Lifecycle:
+  dma_fence_context_alloc(1)     -- module init, once
+  kzalloc + dma_fence_init()     -- per submission
+  dma_fence_add_callback()       -- wire to poll wakeup
+  dma_fence_signal()             -- work complete, triggers cb
+  dma_fence_put()                -- release reference
