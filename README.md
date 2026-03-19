@@ -1,15 +1,10 @@
 # Kernpro - Linux Kernel Programming Coursework
 
-Source code and utilities for Techveda online Linux kernel programming training sessions.
+Source code and utilities for  online Linux kernel programming training sessions.
 
 **Target Kernel Version: 6.14.x**
 
----
 
-**Author:** Raghu Bharadwaj  
-**Organization:** TechVeda  
-**Contact:** < raghu-at-techveda-dot-org >  
-**Copyright:** © 2020-2025 TechVeda. All rights reserved.
 
 ---
 
@@ -19,8 +14,8 @@ Source code and utilities for Techveda online Linux kernel programming training 
 
 ```bash
 # Clone with your GitLab credentials
-git clone https://gitlab.com/techvedalive/lkp0725.git
-cd lkp0725
+git clone https://gitlab.com/shaikh5793/Linux_kernel_prog.git
+cd Linux_kernel_prog
 
 # Create your working branch for exercises
 git checkout -b my-work
@@ -207,7 +202,7 @@ F5          # Refresh cscope database
 **Licensing:**
 - **Source code**: Dual MIT/GPL v2 License (choose either) - See [LICENSE](LICENSE) file
 - **Courseware PDFs**: Confidential, non-distributable, for licensed participants only
-- **Training materials**: Proprietary content of TechVeda
+- **Training materials**: Proprietary content of 
 
 **Disclaimer:**
 This code is provided "AS IS" without warranty. These kernel modules are experimental and designed for educational purposes. Before using any source code in commercial projects or products, consult your organization's legal staff for compliance verification.
@@ -217,16 +212,4 @@ Kernel-level programming can affect system stability. Always test in virtual mac
 
 ---
 
-## About the Author
 
-**Raghu Bharadwaj** is a Linux kernel developer and trainer specializing in system-level programming education. He conducts online and in-person training sessions on Linux kernel internals, device drivers, and embedded systems programming.
-
-*"When you don't create things, you become defined by your tastes rather than ability. Your tastes only narrow & exclude people. So create."*
-
----
-
-**Copyright © 2020-2025 TechVeda. All rights reserved.**
-
-**Contact:** < raghu-at-techveda-dot-org >  
-**Organization:** [TechVeda](https://techveda.org)  
-**Repository:** Kernpro Linux Kernel Programming Coursework
