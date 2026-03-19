@@ -1,0 +1,37 @@
+mutex_lock(struct mutex *) : when mutex is busy puts caller into TASK_UNINTERRUPTIBLE state
+
+mutex_lock_interruptible(struct mutex *): when mutex is busy puts caller into TASK_INTERRUPTIBLE state
+
+mutex_lock_killable(struct mutex *): when mutex is busy puts caller into TASK_INTERRUPTIBLE state, but disables delivery 
+                                     of all other signals except SIGKILL.
+
+mutex_trylock(struct mutex *): Returns 0 on successfull acqusition of lock, a negative(-1) otherwise.
+
+
+mutex_unlock(struct mutex *)
+==============================================================================================================================
+
+app()
+{
+	....
+	....
+	....
+	ret = read(....);
+	...
+	---
+}
+	
+fs_read(...)
+{
+	....
+	ret = mutex_lock_interruptible(&mut);
+	if(ret < 0)
+		return -ERESTART;
+	...
+	...
+	...
+	...
+	mutex_unlock(&mut);
+
+}
+

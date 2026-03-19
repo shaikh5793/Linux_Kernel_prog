@@ -1,0 +1,26 @@
+# Linux kernel module build artifacts
+*.ko
+*.mod
+*.mod.c
+*.o
+*.cmd
+.*.cmd
+Module.symvers
+modules.order
+
+# Compiled binaries
+*.out
+*.bin
+
+# Editor temporary files
+*~
+.*.swp
+.*.swo
+
+# IDE files
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+Thumbs.db

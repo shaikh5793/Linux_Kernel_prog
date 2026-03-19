@@ -1,0 +1,35 @@
+# Copyright (c) 2024 TECH VEDA(www.techveda.org)
+# Author: Raghu Bharadwaj
+#
+# This software is dual-licensed under the MIT License and GPL v2.
+# See the accompanying LICENSE file for the full text.
+#
+# Commands to run directly in QEMU console
+
+# After modules are deployed, type these commands in the QEMU window:
+
+cd /tmp/buggy_modules
+
+# Test 1: Use-After-Free (KASAN/KFENCE should catch this)
+insmod use_after_free.ko
+echo "trigger" > /proc/uaf_trigger
+dmesg | tail -20
+rmmod use_after_free
+
+# Test 2: Buffer Overflow
+insmod buffer_overflow.ko
+echo "overflow" > /proc/overflow_trigger
+dmesg | tail -20
+rmmod buffer_overflow
+
+# Test 3: Deadlock Detection
+insmod deadlock.ko
+echo "trigger" > /proc/deadlock_trigger
+dmesg | tail -20
+rmmod deadlock
+
+# List all available modules
+ls -lh *.ko
+
+# Check loaded modules
+lsmod
