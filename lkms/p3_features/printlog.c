@@ -12,6 +12,9 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/klog.h>
+#include <stdlib.h>
+#include <stdio.h>
+
 
 #define KMSG_PATH "/dev/kmsg"
 #define KLOG_BUF_SIZE (16 * 1024)
